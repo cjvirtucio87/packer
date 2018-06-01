@@ -1,0 +1,60 @@
+{
+  "variables": {
+    "username": "vagrant",
+    "password": "vagrant",
+    "home": "{{ env `HOME` }}"
+  },
+  "provisioners":
+  [ 
+    {
+      "type": "shell",
+      "execute_command": "echo '{{ user `password` }}' | {{ .Vars }} sudo -S -E bash '{{ .Path }}'",
+      "script": "scripts/ansible.sh" 
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo '{{ user `password` }}' | {{ .Vars }} sudo -S -E bash '{{ .Path }}'",
+      "script": "scripts/setup.sh"
+    },
+    {
+      "type": "ansible-local",
+      "playbook_dir": "{{ user `home` }}/git/cjvirtucio87-infra/ansible",
+      "playbook_file": "{{ user `home` }}/git/cjvirtucio87-infra/ansible/vagrant.yml",
+      "role_paths": [
+        "{{ user `home` }}/git/cjvirtucio87-infra/ansible/roles/go",
+        "{{ user `home` }}/git/cjvirtucio87-infra/ansible/roles/java"
+      ]
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo '{{ user `password` }}' | {{ .Vars }} sudo -S -E bash '{{ .Path }}'",
+      "script": "scripts/cleanup.sh"
+    }
+  ],
+  "builders":
+  [
+    {
+      "type": "vmware-iso",
+      "iso_url": "http://mirror.cc.columbia.edu/pub/linux/centos/7/isos/x86_64/CentOS-7-x86_64-Minimal-1708.iso",
+      "iso_checksum": "bba314624956961a2ea31dd460cd860a77911c1e0a56e4820a12b9c5dad363f5",
+      "iso_checksum_type": "sha256",
+      "output_directory": "build",
+      "vm_name": "vmware-iso.{{ user `build_version` }}" ,
+      "ssh_username": "{{ user `username` }}",
+      "ssh_password": "{{ user `password` }}",
+      "ssh_port": 22,
+      "ssh_timeout": "5h",
+      "shutdown_command": "sudo shutdown -hP now",
+      "http_directory": "http",
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "vagrant",
+      "output": "builds/{{ .Provider }}-centos7.box"
+    }
+  ]
+}
